@@ -6,6 +6,13 @@ from flasgger import Swagger
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import os
+import subprocess
+import sys
+
+
+# Definindo a aplicação Flask
+app = Flask(__name__)
+swagger = Swagger(app, template_file=os.path.join("static", "swagger.yaml"))
 
 # Definição do modelo LSTM igual ao do treinamento
 class LSTM(nn.Module):
@@ -33,9 +40,9 @@ output_size = 10
 
 # Inicializa modelo e carrega pesos
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = LSTM(input_size, hidden_size, num_layers, output_size).to(device)
-model.load_state_dict(torch.load("lstm_model.pth", map_location=device))
-model.eval()
+app.model = LSTM(input_size, hidden_size, num_layers, output_size).to(device)
+app.model.load_state_dict(torch.load("lstm_model.pth", map_location=device))
+app.model.eval()
 
 # Carrega scaler treinado (ajuste conforme necessário)
 df = pd.read_csv('data/GOOG.csv')
@@ -43,9 +50,7 @@ df = df[['Close', 'High', 'Low', 'Open', 'Volume']]
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaler.fit(df.values)
 
-app = Flask(__name__)
-swagger = Swagger(app, template_file=os.path.join("static", "swagger.yaml"))
-
+# Rotas da API
 @app.route('/')
 def home():
     return "LSTM API"
@@ -75,7 +80,7 @@ def predict():
 
     input_tensor = torch.tensor(seq_full, dtype=torch.float32).to(device)
     with torch.no_grad():
-        output = model(input_tensor).cpu().numpy()[0]
+        output = app.model(input_tensor).cpu().numpy()[0]
 
     # Desnormaliza as previsões
     predictions = []
@@ -84,6 +89,29 @@ def predict():
         predictions.append(float(inv))
 
     return jsonify({'predictions': predictions})
+
+@app.route('/retrain', methods=['POST'])
+def retrain():
+    try:
+        result = subprocess.run(
+            [sys.executable, "model_train.py"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        # Recarrega o modelo treinado após o retreino
+        app.model.load_state_dict(torch.load("lstm_model.pth", map_location=device))
+        app.model.eval()
+        return jsonify({
+            "status": "success",
+            "output": result.stdout
+        })
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            "status": "error",
+            "output": e.stdout,
+            "error": e.stderr
+        }), 500
 
 def main():
     app.run(debug=True)

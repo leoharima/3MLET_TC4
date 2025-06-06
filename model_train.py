@@ -18,7 +18,7 @@ hidden_size = 10
 num_layers = 2
 num_epochs = 30
 batch_size = 64
-learning_rate = 0.01
+learning_rate = 0.001
 sequence_length = 20
 output_size = 10
 

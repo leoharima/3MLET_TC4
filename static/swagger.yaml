@@ -63,3 +63,35 @@ paths:
                   type: "number"
         400:
           description: "Erro de validação"
+  /retrain:
+    post:
+      tags:
+        - "Model"
+      summary: "Retreina o modelo LSTM"
+      description: "Executa o script de retreino do modelo e recarrega o modelo na API."
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: "Retreino realizado com sucesso"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+                example: "success"
+              output:
+                type: "string"
+                description: "Saída do script de retreino"
+        500:
+          description: "Erro ao retreinar o modelo"
+          schema:
+            type: "object"
+            properties:
+              status:
+                type: "string"
+                example: "error"
+              output:
+                type: "string"
+              error:
+                type: "string"
