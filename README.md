@@ -67,7 +67,7 @@ Este projeto implementa uma API Flask para previsão dos próximos 10 fechamento
 ## Exemplo de uso do endpoint `/predict`
 
 **Request:**
-```json
+```
 POST /predict
 Content-Type: application/json
 
@@ -81,7 +81,7 @@ Content-Type: application/json
 ```
 
 **Response:**
-```json
+```
 {
   "predictions": [125.1, 125.8, ..., 130.2]
 }
@@ -103,7 +103,6 @@ As métricas estarão disponibilizadas em http://localhost:5000/metrics
 - O arquivo `static/swagger.yaml` contém a especificação Swagger da API.
 - O modelo é salvo e carregado do arquivo `lstm_model.pth`.
 - Os dados históricos são salvos em `data/GOOG.csv`.
-
 
 ## Autoria
 
