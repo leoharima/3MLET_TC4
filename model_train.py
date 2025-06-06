@@ -11,8 +11,10 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import mlflow
 import mlflow.pytorch
 
+# Define o dispositivo (GPU se disponível, senão CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Hiperparâmetros do modelo
 input_size = 5
 hidden_size = 10
 num_layers = 2
@@ -22,13 +24,19 @@ learning_rate = 0.001
 sequence_length = 20
 output_size = 10
 
+# Carrega e prepara os dados
 df = pd.read_csv('data/GOOG.csv')
 df = df[['Close', 'High', 'Low', 'Open', 'Volume']]
 
+# Normaliza os dados
 scaler = MinMaxScaler(feature_range=(0, 1))
 df_scaled = scaler.fit_transform(df.values)
 
 def cria_sequencia(df, sequence_length, output_size):
+    """
+    Cria sequências de entrada e saída para o modelo LSTM.
+    Cada sequência de entrada tem tamanho sequence_length e a saída são os próximos output_size valores de 'Close'.
+    """
     sequences = []
     labels = []
     for i in range(len(df) - sequence_length - output_size + 1):
@@ -38,17 +46,21 @@ def cria_sequencia(df, sequence_length, output_size):
         labels.append(label)
     return np.array(sequences), np.array(labels)
 
+# Gera os dados de entrada e saída
 X, y = cria_sequencia(df_scaled, sequence_length, output_size)
 
+# Divide em treino e teste (sem embaralhar para séries temporais)
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.3, shuffle=False
 )
 
+# Converte para tensores do PyTorch
 X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
 y_train = torch.tensor(y_train, dtype=torch.float32).to(device)
 X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
 y_test = torch.tensor(y_test, dtype=torch.float32).to(device)
 
+# Cria DataLoaders para treino e teste
 train_dataset = TensorDataset(X_train, y_train)
 test_dataset = TensorDataset(X_test, y_test)
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)

@@ -14,6 +14,8 @@ import sys
 # Definindo a aplicação Flask
 app = Flask(__name__)
 swagger = Swagger(app, template_file=os.path.join("static", "swagger.yaml"))
+
+# Inicializa PrometheusMetrics
 metrics = PrometheusMetrics(app, defaults=None)
 
 # Definição do modelo LSTM igual ao do treinamento
@@ -55,11 +57,15 @@ scaler.fit(df.values)
 # Rotas da API
 @app.route('/')
 def home():
+    """Retorna status simples da API (como um olá mundo)."""
     return "LSTM API"
 
 @metrics.summary('predict_processing_seconds', 'Tempo processando o precict', labels={'endpoint': 'predict'})
 @app.route('/predict', methods=['POST'])
 def predict():
+    """
+    Recebe um array de 10 registros de features e retorna a previsão dos próximos 10 fechamentos.
+    """
     data = request.get_json()
     # Espera um array de 10 objetos, cada um com as 5 features
     features = data.get('features')
@@ -96,6 +102,9 @@ def predict():
 @metrics.summary('retrain_processing_seconds', 'Tempo processando o retreino', labels={'endpoint': 'retrain'})
 @app.route('/retrain', methods=['POST'])
 def retrain():
+    """
+    Executa o script de retreino do modelo e recarrega o modelo treinado na API.
+    """
     try:
         result = subprocess.run(
             [sys.executable, "model_train.py"],
@@ -118,6 +127,7 @@ def retrain():
         }), 500
 
 def main():
+    """Função principal para rodar a API Flask."""
     app.run(debug=False, use_reloader=False)
 
 if __name__ == '__main__':
