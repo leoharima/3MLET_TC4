@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 from flask import Flask, request, jsonify
 from flasgger import Swagger
+from prometheus_flask_exporter import PrometheusMetrics
 from sklearn.preprocessing import MinMaxScaler
 import pandas as pd
 import os
@@ -13,6 +14,7 @@ import sys
 # Definindo a aplicação Flask
 app = Flask(__name__)
 swagger = Swagger(app, template_file=os.path.join("static", "swagger.yaml"))
+metrics = PrometheusMetrics(app, defaults=None)
 
 # Definição do modelo LSTM igual ao do treinamento
 class LSTM(nn.Module):
@@ -55,6 +57,7 @@ scaler.fit(df.values)
 def home():
     return "LSTM API"
 
+@metrics.summary('predict_processing_seconds', 'Tempo processando o precict', labels={'endpoint': 'predict'})
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.get_json()
@@ -90,6 +93,7 @@ def predict():
 
     return jsonify({'predictions': predictions})
 
+@metrics.summary('retrain_processing_seconds', 'Tempo processando o retreino', labels={'endpoint': 'retrain'})
 @app.route('/retrain', methods=['POST'])
 def retrain():
     try:
@@ -114,7 +118,7 @@ def retrain():
         }), 500
 
 def main():
-    app.run(debug=True)
+    app.run(debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     main()
